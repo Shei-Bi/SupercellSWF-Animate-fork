@@ -204,6 +204,9 @@ Next, after preparing all modules, you need to open console (as admin in case of
     `  
     After the command completes, installer files will be available in `dist/package` folder.  
     You can run it or zip and share.
+
+    On GitHub, run **Actions → Windows release installer → Run workflow**, or push a tag matching `v*` (for example, `v1.4.0`). The workflow builds the installer, publisher interface, and AVX2, SSE4.1, and default Windows plugin packages using the certificate details in `scripts/cert.ts`. Download the `SupercellSWF-Animate-windows-x64` ZIP from the workflow run's artifacts, extract it, and run `install.jsfl` in Adobe Animate.
+
 - Debug  
     If you want to use a debug build then make sure you have CEP debug mode enabled. You can read more about CEP [Here](https://github.com/Adobe-CEP/CEP-Resources/blob/master/CEP_9.x/Documentation/CEP%209.0%20HTML%20Extension%20Cookbook.md)  
     After that you need to use this command:  

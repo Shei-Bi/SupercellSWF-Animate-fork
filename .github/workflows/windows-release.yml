@@ -1,0 +1,99 @@
+name: Windows release installer
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build Windows installer with all packages
+    runs-on: windows-2022
+    timeout-minutes: 180
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v5
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - name: Set up MSVC
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+          vsversion: '2022'
+
+      - name: Configure vcpkg
+        run: |
+          "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" >> $env:GITHUB_ENV
+          git config --global core.longpaths true
+
+      - name: Install workspace dependencies
+        run: pnpm install --frozen-lockfile
+
+      # These settings match the first (AVX2) build performed by the packager.
+      - name: Configure native dependencies
+        working-directory: packages/plugin
+        run: >-
+          cmake --preset Windows-Release -S . -B build-release
+          -DBUILD_SHARED_LIBS=OFF
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+          -DVCPKG_FEATURE_FLAGS=simd
+          -DWK_PREFERRED_CPU_FEATURES=avx2
+
+      - name: Build installer and all Windows packages
+        run: |
+          pnpm run package 2>&1 | Tee-Object -FilePath windows-package-build.log
+          exit $LASTEXITCODE
+
+      - name: Upload native build diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v5
+        with:
+          name: windows-native-build-logs
+          path: |
+            windows-package-build.log
+            packages/plugin/build-release/skia_build/**/*.log
+            packages/plugin/build-release/CMakeFiles/CMakeConfigureLog.yaml
+            packages/plugin/skia/out/**/args.gn
+          if-no-files-found: ignore
+
+      - name: Verify installer contents
+        run: |
+          $requiredFiles = @('install.jsfl', 'manifest.json', 'bin/7z.exe', 'bin/7z.dll', 'bin/info.exe')
+          foreach ($file in $requiredFiles) {
+            if (-not (Test-Path -LiteralPath "dist/package/$file" -PathType Leaf)) {
+              throw "Missing installer file: $file"
+            }
+          }
+          $manifest = Get-Content -LiteralPath dist/package/manifest.json -Raw | ConvertFrom-Json
+          $extensions = @($manifest.extensions | Where-Object type -EQ 'extension')
+          if ($extensions.Count -ne 3) {
+            throw "Expected AVX2, SSE4.1, and default extension packages; found $($extensions.Count)"
+          }
+          foreach ($extension in $manifest.extensions) {
+            if (-not (Test-Path -LiteralPath "dist/package/$($extension.path)" -PathType Leaf)) {
+              throw "Missing package: $($extension.path)"
+            }
+          }
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v5
+        with:
+          name: SupercellSWF-Animate-windows-x64
+          path: dist/package/
+          if-no-files-found: error

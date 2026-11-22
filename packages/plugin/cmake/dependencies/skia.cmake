@@ -1,5 +1,8 @@
 include(ExternalProject)
 
+# Skia's static release build embeds libpng, which needs zlib symbols at final link time.
+find_package(ZLIB REQUIRED)
+
 # TODO: Check if this work on MacOS
 
 # Required tools
@@ -66,6 +69,8 @@ set(GN_BASE_RELEASE_ARGS
     skia_use_system_libpng=false
 )
 set(GN_BASE_ARGS
+    # Official builds default to system zlib, which GN cannot locate through vcpkg.
+    skia_use_system_zlib=false
     skia_use_no_webp_encode=true
     skia_use_no_jpeg_encode=true
     skia_use_lua=false
@@ -188,6 +193,7 @@ if(APPLE)
         LOG_CONFIGURE ON
         LOG_BUILD ON
         LOG_INSTALL ON
+        LOG_OUTPUT_ON_FAILURE ON
     )
 else()
     ExternalProject_Add(
@@ -216,6 +222,7 @@ else()
         LOG_CONFIGURE ON
         LOG_BUILD ON
         LOG_INSTALL ON
+        LOG_OUTPUT_ON_FAILURE ON
     )
 endif()
 
@@ -252,6 +259,7 @@ add_library(skia INTERFACE)
 add_dependencies(skia skia_project)
 target_link_libraries(
     skia INTERFACE
+    ZLIB::ZLIB # libpng inside static skia
     $<$<CONFIG:Debug>:skia_debug> # Debug lib
     $<$<NOT:$<CONFIG:Debug>>:skia_release> # Release lib
 

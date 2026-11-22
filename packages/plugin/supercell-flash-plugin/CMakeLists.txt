@@ -91,7 +91,8 @@ if(APPLE)
     )
 endif()
 
-if(WIN32 AND BUILD_SHARED_LIBS)
+# Release builds also need runtime DLLs from dependencies such as zlib.
+if(WIN32)
     add_custom_command(
         TARGET ${TARGET} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:${TARGET}> $<TARGET_FILE_DIR:${TARGET}>

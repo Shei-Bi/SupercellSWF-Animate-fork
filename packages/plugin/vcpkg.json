@@ -9,6 +9,7 @@
         "nlopt",
         "simdutf",
         "cdt",
-        "zlib"
+        "zlib",
+        "flatbuffers"
     ]
 }
