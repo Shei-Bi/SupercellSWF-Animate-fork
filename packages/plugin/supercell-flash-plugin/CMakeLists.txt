@@ -95,7 +95,10 @@ endif()
 if(WIN32)
     add_custom_command(
         TARGET ${TARGET} POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:${TARGET}> $<TARGET_FILE_DIR:${TARGET}>
-        COMMAND_EXPAND_LISTS
+        COMMAND ${CMAKE_COMMAND}
+            "-DRUNTIME_DLLS=$<TARGET_RUNTIME_DLLS:${TARGET}>"
+            "-DDESTINATION=$<TARGET_FILE_DIR:${TARGET}>"
+            -P "${CMAKE_CURRENT_LIST_DIR}/../cmake/copy_runtime_dlls.cmake"
+        VERBATIM
     )
 endif()
