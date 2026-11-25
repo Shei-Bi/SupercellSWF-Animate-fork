@@ -89,7 +89,6 @@ namespace sc::Adobe {
         using namespace Animate::DOM;
         const SCConfig& config = SCPlugin::Publisher::ActiveConfig();
 
-        m_object.font_name = flash::SWFString(FCM::Locale::ToUtf8(textRun.fontName));
         m_object.font_color.r = textRun.fontColor.blue;
         m_object.font_color.g = textRun.fontColor.green;
         m_object.font_color.b = textRun.fontColor.red;
@@ -101,6 +100,11 @@ namespace sc::Adobe {
                                   textRun.fontStyle == FrameElement::BOLD_ITALIC_STYLE_STR);
         m_object.style.set_bold(textRun.fontStyle == FrameElement::BOLD_STYLE_STR ||
                                 textRun.fontStyle == FrameElement::BOLD_ITALIC_STYLE_STR);
+
+        m_object.font_name = flash::SWFString(FCM::Locale::ToUtf8(textRun.fontName));
+        if (m_object.font_name == "Supercell Text" && m_object.style.is_bold()) {
+            m_object.font_name = flash::SWFString("Supercell Text Bold");
+        }
 
         if (config.backwardCompatibility)
             return;
